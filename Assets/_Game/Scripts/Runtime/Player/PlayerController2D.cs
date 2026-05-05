@@ -32,6 +32,11 @@ namespace GameLab.Player
         [Header("Visual")]
         [SerializeField] private SpriteRenderer spriteRenderer;
 
+        [Header("Effects")]
+        [SerializeField] private ParticleSystem runParticles;
+        [SerializeField, Min(0f)] private float runParticleMinSpeed = 0.1f;
+        [SerializeField] private bool clearRunParticlesOnStop;
+
         [Header("Animation")]
         [SerializeField] private Animator animator;
         [SerializeField] private AnimationClip idleAnimation;
@@ -69,9 +74,11 @@ namespace GameLab.Player
             body = GetComponent<Rigidbody2D>();
             ownColliders = GetComponents<Collider2D>();
             ResolveSpriteRenderer();
+            ResolveRunParticles();
             isFacingRight = spriteRenderer == null || !spriteRenderer.flipX;
             body.freezeRotation = true;
             InitializeAnimationGraph();
+            StopRunParticles(true);
         }
 
         private void OnEnable()
@@ -97,6 +104,7 @@ namespace GameLab.Player
             }
 
             jumpPressed = false;
+            UpdateRunParticles();
             UpdateAnimation();
         }
 
@@ -111,6 +119,7 @@ namespace GameLab.Player
             }
 
             SetVelocity(velocity);
+            UpdateRunParticles();
             UpdateAnimation();
         }
 
@@ -125,6 +134,8 @@ namespace GameLab.Player
             {
                 animationGraph.Stop();
             }
+
+            StopRunParticles(true);
         }
 
         private void OnDestroy()
@@ -145,6 +156,7 @@ namespace GameLab.Player
             isGrounded = false;
             SetVelocity(Vector2.zero);
             currentAnimationState = PlayerAnimationState.None;
+            StopRunParticles(true);
             UpdateAnimation();
         }
 
@@ -265,6 +277,19 @@ namespace GameLab.Player
             }
         }
 
+        private void ResolveRunParticles()
+        {
+            if (runParticles == null)
+            {
+                runParticles = GetComponentInChildren<ParticleSystem>(true);
+            }
+
+            if (runParticles != null && !runParticles.gameObject.activeSelf)
+            {
+                runParticles.gameObject.SetActive(true);
+            }
+        }
+
         private void UpdateFacingDirection()
         {
             if (spriteRenderer == null || Mathf.Abs(horizontalInput) <= 0.01f)
@@ -353,6 +378,45 @@ namespace GameLab.Player
             animationMixer.SetInputWeight(0, 1f);
             currentAnimationPlayable = clipPlayable;
             currentAnimationState = state;
+        }
+
+        private void UpdateRunParticles()
+        {
+            if (runParticles == null)
+            {
+                return;
+            }
+
+            Vector2 velocity = GetVelocity();
+            bool shouldPlay = isGrounded
+                && Mathf.Abs(horizontalInput) > 0.01f
+                && Mathf.Abs(velocity.x) > runParticleMinSpeed;
+
+            if (shouldPlay)
+            {
+                if (!runParticles.isPlaying)
+                {
+                    runParticles.Play(true);
+                }
+
+                return;
+            }
+
+            StopRunParticles(clearRunParticlesOnStop);
+        }
+
+        private void StopRunParticles(bool clear)
+        {
+            if (runParticles == null || (!clear && !runParticles.isPlaying))
+            {
+                return;
+            }
+
+            ParticleSystemStopBehavior stopBehavior = clear
+                ? ParticleSystemStopBehavior.StopEmittingAndClear
+                : ParticleSystemStopBehavior.StopEmitting;
+
+            runParticles.Stop(true, stopBehavior);
         }
 
         public Vector2 GetCurrentVelocity()
