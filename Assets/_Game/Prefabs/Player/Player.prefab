@@ -215,12 +215,19 @@ MonoBehaviour:
   moveSpeed: 7
   jumpForce: 8
   coyoteTime: 0.12
+  fastFallSpeed: 18
   groundCheck: {fileID: 1721846607340632255}
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
   groundCheckOffset: {x: 0, y: -0.55}
   groundCheckRadius: 0.18
+  spriteRenderer: {fileID: 7345210561508911261}
+  animator: {fileID: 0}
+  idleAnimation: {fileID: 7400000, guid: c9286078072e08045a1761fd6d2cc4bd, type: 2}
+  runAnimation: {fileID: 7400000, guid: af6ff6c08775ddb449e7410548a9df5b, type: 2}
+  jumpAnimation: {fileID: 7400000, guid: c629cc227adf788439af5ad3f32f9131, type: 2}
+  fallAnimation: {fileID: 7400000, guid: 50ebfbc9e7c975c458a5c4f7d187f9ee, type: 2}
 --- !u!114 &5406959069142812374
 MonoBehaviour:
   m_ObjectHideFlags: 0

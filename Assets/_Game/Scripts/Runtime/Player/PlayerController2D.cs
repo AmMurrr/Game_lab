@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using GameLab.Corpses;
 
 #if ENABLE_INPUT_SYSTEM
@@ -27,27 +29,64 @@ namespace GameLab.Player
         [SerializeField] private Vector2 groundCheckOffset = new Vector2(0f, -0.55f);
         [SerializeField] private float groundCheckRadius = 0.18f;
 
+        [Header("Visual")]
+        [SerializeField] private SpriteRenderer spriteRenderer;
+
+        [Header("Animation")]
+        [SerializeField] private Animator animator;
+        [SerializeField] private AnimationClip idleAnimation;
+        [SerializeField] private AnimationClip runAnimation;
+        [SerializeField] private AnimationClip jumpAnimation;
+        [SerializeField] private AnimationClip fallAnimation;
+
         private readonly Collider2D[] groundHits = new Collider2D[8];
+
+        private enum PlayerAnimationState
+        {
+            None,
+            Idle,
+            Run,
+            Jump,
+            Fall
+        }
 
         private Rigidbody2D body;
         private Collider2D[] ownColliders;
+        private PlayableGraph animationGraph;
+        private AnimationMixerPlayable animationMixer;
+        private Playable currentAnimationPlayable;
+        private PlayerAnimationState currentAnimationState = PlayerAnimationState.None;
         private float horizontalInput;
         private float coyoteCounter;
         private float currentGroundJumpMultiplier = 1f;
         private bool jumpPressed;
         private bool fastFallHeld;
+        private bool isFacingRight = true;
         private bool isGrounded;
 
         private void Awake()
         {
             body = GetComponent<Rigidbody2D>();
             ownColliders = GetComponents<Collider2D>();
+            ResolveSpriteRenderer();
+            isFacingRight = spriteRenderer == null || !spriteRenderer.flipX;
             body.freezeRotation = true;
+            InitializeAnimationGraph();
+        }
+
+        private void OnEnable()
+        {
+            if (animationGraph.IsValid())
+            {
+                animationGraph.Play();
+                currentAnimationState = PlayerAnimationState.None;
+            }
         }
 
         private void Update()
         {
             ReadInput();
+            UpdateFacingDirection();
 
             isGrounded = CheckGrounded();
             coyoteCounter = isGrounded ? coyoteTime : coyoteCounter - Time.deltaTime;
@@ -58,6 +97,7 @@ namespace GameLab.Player
             }
 
             jumpPressed = false;
+            UpdateAnimation();
         }
 
         private void FixedUpdate()
@@ -71,6 +111,7 @@ namespace GameLab.Player
             }
 
             SetVelocity(velocity);
+            UpdateAnimation();
         }
 
         private void OnDisable()
@@ -79,6 +120,19 @@ namespace GameLab.Player
             jumpPressed = false;
             fastFallHeld = false;
             currentGroundJumpMultiplier = 1f;
+
+            if (animationGraph.IsValid())
+            {
+                animationGraph.Stop();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (animationGraph.IsValid())
+            {
+                animationGraph.Destroy();
+            }
         }
 
         public void ResetMotion()
@@ -90,6 +144,8 @@ namespace GameLab.Player
             currentGroundJumpMultiplier = 1f;
             isGrounded = false;
             SetVelocity(Vector2.zero);
+            currentAnimationState = PlayerAnimationState.None;
+            UpdateAnimation();
         }
 
         private void ReadInput()
@@ -158,6 +214,145 @@ namespace GameLab.Player
 
             currentGroundJumpMultiplier = hasGround ? bestJumpMultiplier : 1f;
             return hasGround;
+        }
+
+        private void InitializeAnimationGraph()
+        {
+            if (animator == null)
+            {
+                TryGetComponent(out animator);
+            }
+
+            if (animator == null && HasAnimationClips())
+            {
+                animator = gameObject.AddComponent<Animator>();
+            }
+
+            if (animator == null || !HasAnimationClips())
+            {
+                return;
+            }
+
+            animator.applyRootMotion = false;
+
+            animationGraph = PlayableGraph.Create($"{nameof(PlayerController2D)}Animation");
+            animationGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+
+            animationMixer = AnimationMixerPlayable.Create(animationGraph, 1);
+            AnimationPlayableOutput output = AnimationPlayableOutput.Create(animationGraph, "Player Animation", animator);
+            output.SetSourcePlayable(animationMixer);
+            animationGraph.Play();
+        }
+
+        private bool HasAnimationClips()
+        {
+            return idleAnimation != null
+                || runAnimation != null
+                || jumpAnimation != null
+                || fallAnimation != null;
+        }
+
+        private void ResolveSpriteRenderer()
+        {
+            if (spriteRenderer == null)
+            {
+                TryGetComponent(out spriteRenderer);
+            }
+
+            if (spriteRenderer == null)
+            {
+                spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            }
+        }
+
+        private void UpdateFacingDirection()
+        {
+            if (spriteRenderer == null || Mathf.Abs(horizontalInput) <= 0.01f)
+            {
+                return;
+            }
+
+            bool shouldFaceRight = horizontalInput > 0f;
+            if (shouldFaceRight == isFacingRight)
+            {
+                return;
+            }
+
+            isFacingRight = shouldFaceRight;
+            spriteRenderer.flipX = !isFacingRight;
+        }
+
+        private void UpdateAnimation()
+        {
+            if (!animationGraph.IsValid())
+            {
+                return;
+            }
+
+            PlayerAnimationState nextState = GetAnimationState();
+            if (nextState == currentAnimationState)
+            {
+                return;
+            }
+
+            AnimationClip nextClip = GetAnimationClip(nextState);
+            if (nextClip == null)
+            {
+                return;
+            }
+
+            PlayAnimation(nextState, nextClip);
+        }
+
+        private PlayerAnimationState GetAnimationState()
+        {
+            Vector2 velocity = GetVelocity();
+
+            if (!isGrounded)
+            {
+                return fastFallHeld || velocity.y <= 0f
+                    ? PlayerAnimationState.Fall
+                    : PlayerAnimationState.Jump;
+            }
+
+            return Mathf.Abs(horizontalInput) > 0.01f || Mathf.Abs(velocity.x) > 0.01f
+                ? PlayerAnimationState.Run
+                : PlayerAnimationState.Idle;
+        }
+
+        private AnimationClip GetAnimationClip(PlayerAnimationState state)
+        {
+            switch (state)
+            {
+                case PlayerAnimationState.Run:
+                    return runAnimation != null ? runAnimation : idleAnimation;
+                case PlayerAnimationState.Jump:
+                    return jumpAnimation != null ? jumpAnimation : fallAnimation;
+                case PlayerAnimationState.Fall:
+                    return fallAnimation != null ? fallAnimation : jumpAnimation;
+                case PlayerAnimationState.Idle:
+                    return idleAnimation;
+                default:
+                    return null;
+            }
+        }
+
+        private void PlayAnimation(PlayerAnimationState state, AnimationClip clip)
+        {
+            if (currentAnimationPlayable.IsValid())
+            {
+                animationGraph.Disconnect(animationMixer, 0);
+                currentAnimationPlayable.Destroy();
+            }
+
+            AnimationClipPlayable clipPlayable = AnimationClipPlayable.Create(animationGraph, clip);
+            clipPlayable.SetApplyFootIK(false);
+            clipPlayable.SetApplyPlayableIK(false);
+
+            animationGraph.Connect(clipPlayable, 0, animationMixer, 0);
+            animationMixer.SetInputWeight(0, 1f);
+            currentAnimationPlayable = clipPlayable;
+            currentAnimationState = state;
         }
 
         public Vector2 GetCurrentVelocity()
