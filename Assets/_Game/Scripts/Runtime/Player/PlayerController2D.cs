@@ -1,8 +1,227 @@
 using UnityEngine;
+using GameLab.Corpses;
+
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace GameLab.Player
 {
+    [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Collider2D))]
     public sealed class PlayerController2D : MonoBehaviour
     {
+        [Header("Movement")]
+        [SerializeField] private float moveSpeed = 7f;
+
+        [Header("Jump")]
+        [SerializeField] private float jumpForce = 12f;
+        [SerializeField] private float coyoteTime = 0.12f;
+
+        [Header("Fast Fall")]
+        [SerializeField] private float fastFallSpeed = 18f;
+
+        [Header("Ground Check")]
+        [SerializeField] private Transform groundCheck;
+        [SerializeField] private LayerMask groundLayer = ~0;
+        [SerializeField] private Vector2 groundCheckOffset = new Vector2(0f, -0.55f);
+        [SerializeField] private float groundCheckRadius = 0.18f;
+
+        private readonly Collider2D[] groundHits = new Collider2D[8];
+
+        private Rigidbody2D body;
+        private Collider2D[] ownColliders;
+        private float horizontalInput;
+        private float coyoteCounter;
+        private float currentGroundJumpMultiplier = 1f;
+        private bool jumpPressed;
+        private bool fastFallHeld;
+        private bool isGrounded;
+
+        private void Awake()
+        {
+            body = GetComponent<Rigidbody2D>();
+            ownColliders = GetComponents<Collider2D>();
+            body.freezeRotation = true;
+        }
+
+        private void Update()
+        {
+            ReadInput();
+
+            isGrounded = CheckGrounded();
+            coyoteCounter = isGrounded ? coyoteTime : coyoteCounter - Time.deltaTime;
+
+            if (jumpPressed && coyoteCounter > 0f)
+            {
+                Jump();
+            }
+
+            jumpPressed = false;
+        }
+
+        private void FixedUpdate()
+        {
+            Vector2 velocity = GetVelocity();
+            velocity.x = horizontalInput * moveSpeed;
+
+            if (fastFallHeld && !isGrounded)
+            {
+                velocity.y = Mathf.Min(velocity.y, -fastFallSpeed);
+            }
+
+            SetVelocity(velocity);
+        }
+
+        private void OnDisable()
+        {
+            horizontalInput = 0f;
+            jumpPressed = false;
+            fastFallHeld = false;
+            currentGroundJumpMultiplier = 1f;
+        }
+
+        public void ResetMotion()
+        {
+            horizontalInput = 0f;
+            jumpPressed = false;
+            fastFallHeld = false;
+            coyoteCounter = 0f;
+            currentGroundJumpMultiplier = 1f;
+            isGrounded = false;
+            SetVelocity(Vector2.zero);
+        }
+
+        private void ReadInput()
+        {
+            horizontalInput = 0f;
+            fastFallHeld = false;
+
+#if ENABLE_INPUT_SYSTEM
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
+                {
+                    horizontalInput -= 1f;
+                }
+
+                if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
+                {
+                    horizontalInput += 1f;
+                }
+
+                jumpPressed = keyboard.spaceKey.wasPressedThisFrame
+                    || keyboard.wKey.wasPressedThisFrame
+                    || keyboard.upArrowKey.wasPressedThisFrame;
+
+                fastFallHeld = keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed;
+            }
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            horizontalInput = Input.GetAxisRaw("Horizontal");
+            jumpPressed = Input.GetButtonDown("Jump");
+            fastFallHeld = Input.GetAxisRaw("Vertical") < -0.5f;
+#endif
+        }
+
+        private void Jump()
+        {
+            Vector2 velocity = GetVelocity();
+            velocity.y = jumpForce * currentGroundJumpMultiplier;
+            SetVelocity(velocity);
+            coyoteCounter = 0f;
+            isGrounded = false;
+        }
+
+        private bool CheckGrounded()
+        {
+            Vector2 checkPosition = GetGroundCheckPosition();
+            int hitCount = Physics2D.OverlapCircleNonAlloc(checkPosition, groundCheckRadius, groundHits, groundLayer);
+            bool hasGround = false;
+            float bestJumpMultiplier = 1f;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider2D hit = groundHits[i];
+                if (hit == null || hit.isTrigger || IsOwnCollider(hit))
+                {
+                    continue;
+                }
+
+                hasGround = true;
+                CorpseBehavior corpse = hit.GetComponentInParent<CorpseBehavior>();
+                if (corpse != null)
+                {
+                    bestJumpMultiplier = Mathf.Max(bestJumpMultiplier, corpse.JumpMultiplier);
+                }
+            }
+
+            currentGroundJumpMultiplier = hasGround ? bestJumpMultiplier : 1f;
+            return hasGround;
+        }
+
+        public Vector2 GetCurrentVelocity()
+        {
+            return GetVelocity();
+        }
+
+        public void SetCurrentVelocity(Vector2 velocity)
+        {
+            SetVelocity(velocity);
+        }
+
+        public void ClearGrounding()
+        {
+            coyoteCounter = 0f;
+            isGrounded = false;
+            currentGroundJumpMultiplier = 1f;
+        }
+
+        private Vector2 GetGroundCheckPosition()
+        {
+            if (groundCheck != null)
+            {
+                return groundCheck.position;
+            }
+
+            return (Vector2)transform.position + groundCheckOffset;
+        }
+
+        private bool IsOwnCollider(Collider2D hit)
+        {
+            for (int i = 0; i < ownColliders.Length; i++)
+            {
+                if (ownColliders[i] == hit)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private Vector2 GetVelocity()
+        {
+#if UNITY_6000_0_OR_NEWER
+            return body.linearVelocity;
+#else
+            return body.velocity;
+#endif
+        }
+
+        private void SetVelocity(Vector2 velocity)
+        {
+#if UNITY_6000_0_OR_NEWER
+            body.linearVelocity = velocity;
+#else
+            body.velocity = velocity;
+#endif
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = isGrounded ? Color.green : Color.yellow;
+            Gizmos.DrawWireSphere(GetGroundCheckPosition(), groundCheckRadius);
+        }
     }
 }

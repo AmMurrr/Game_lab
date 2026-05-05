@@ -1,7 +1,9 @@
 {
     "name": "GameLab.Runtime",
     "rootNamespace": "GameLab",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
