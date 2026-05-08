@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &3234855072606981656
+--- !u!1 &6578554552697048498
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,41 +8,41 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 4022133359014981288}
-  - component: {fileID: -4794361410397632985}
-  - component: {fileID: -5406224097325358357}
-  - component: {fileID: -7135677472440606639}
-  - component: {fileID: 3518242227631672449}
+  - component: {fileID: 5416366232157794448}
+  - component: {fileID: 2244644874992827924}
+  - component: {fileID: 1841298279132955542}
+  - component: {fileID: 6227320280328392586}
+  - component: {fileID: 7975798382341675695}
   m_Layer: 3
-  m_Name: Corpse
+  m_Name: small-platform (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &4022133359014981288
+--- !u!4 &5416366232157794448
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3234855072606981656}
+  m_GameObject: {fileID: 6578554552697048498}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.39649, y: -0.5148, z: 0}
+  m_LocalPosition: {x: 1.5, y: 8.47, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &-4794361410397632985
+--- !u!212 &2244644874992827924
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3234855072606981656}
+  m_GameObject: {fileID: 6578554552697048498}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -84,23 +84,23 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -6447722072507503168, guid: 10f3cacccb0c4c547be76836eba20664, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d3ae29bc873704d6197af9ad030f1b1c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
-  m_FlipY: 1
+  m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!61 &-5406224097325358357
+--- !u!61 &1841298279132955542
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3234855072606981656}
+  m_GameObject: {fileID: 6578554552697048498}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -140,22 +140,22 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!50 &-7135677472440606639
+--- !u!50 &6227320280328392586
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3234855072606981656}
-  m_BodyType: 0
+  m_GameObject: {fileID: 6578554552697048498}
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 2
+  m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.3
-  m_GravityScale: 1
+  m_AngularDamping: 0.05
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -163,28 +163,26 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &3518242227631672449
+--- !u!114 &7975798382341675695
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3234855072606981656}
+  m_GameObject: {fileID: 6578554552697048498}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4422546a2404c584cb0839e3832291d9, type: 3}
+  m_Script: {fileID: 11500000, guid: 6beb3ad3def8a3547875e8d4d14436f3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GameLab.Runtime::GameLab.Corpses.CorpseBehavior
-  spriteRenderer: {fileID: -4794361410397632985}
-  freshSprite: {fileID: 21300000, guid: aa0c0ec24fae84a43b7ab0a05a0a1e85, type: 3}
-  rottenSprite: {fileID: 21300000, guid: d91df1ee8fc743b469defd02018b8383, type: 3}
-  skeletonSprite: {fileID: 21300000, guid: 0870c883a3a2852429f7e50845ff1b1b, type: 3}
-  freshColor: {r: 1, g: 1, b: 1, a: 1}
-  rottenColor: {r: 0.88784707, g: 0.9198113, b: 0.82002044, a: 1}
-  skeletonColor: {r: 1, g: 1, b: 1, a: 0.5411765}
-  solidCollider: {fileID: -5406224097325358357}
-  rottenJumpMultiplier: 1.35
+  m_EditorClassIdentifier: GameLab.Runtime::GameLab.Level.MovingPlatform2D
+  speed: 4
+  targetPoint: {fileID: 0}
+  localMoveOffset: {x: 0, y: 10}
+  arriveDistance: 0.02
+  startDelay: 0
+  waitAtEnds: 0
+  moveOnStart: 1

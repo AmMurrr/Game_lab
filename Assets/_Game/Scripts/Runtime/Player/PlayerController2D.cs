@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 using GameLab.Corpses;
+using GameLab.Level;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -64,6 +65,7 @@ namespace GameLab.Player
         private float horizontalInput;
         private float coyoteCounter;
         private float currentGroundJumpMultiplier = 1f;
+        private Vector2 currentGroundVelocity;
         private bool jumpPressed;
         private bool fastFallHeld;
         private bool isFacingRight = true;
@@ -111,7 +113,8 @@ namespace GameLab.Player
         private void FixedUpdate()
         {
             Vector2 velocity = GetVelocity();
-            velocity.x = horizontalInput * moveSpeed;
+            Vector2 groundVelocity = isGrounded ? currentGroundVelocity : Vector2.zero;
+            velocity.x = horizontalInput * moveSpeed + groundVelocity.x;
 
             if (fastFallHeld && !isGrounded)
             {
@@ -153,6 +156,7 @@ namespace GameLab.Player
             fastFallHeld = false;
             coyoteCounter = 0f;
             currentGroundJumpMultiplier = 1f;
+            currentGroundVelocity = Vector2.zero;
             isGrounded = false;
             SetVelocity(Vector2.zero);
             currentAnimationState = PlayerAnimationState.None;
@@ -195,10 +199,11 @@ namespace GameLab.Player
         private void Jump()
         {
             Vector2 velocity = GetVelocity();
-            velocity.y = jumpForce * currentGroundJumpMultiplier;
+            velocity.y = jumpForce * currentGroundJumpMultiplier + Mathf.Max(0f, currentGroundVelocity.y);
             SetVelocity(velocity);
             coyoteCounter = 0f;
             isGrounded = false;
+            currentGroundVelocity = Vector2.zero;
         }
 
         private bool CheckGrounded()
@@ -207,6 +212,8 @@ namespace GameLab.Player
             int hitCount = Physics2D.OverlapCircleNonAlloc(checkPosition, groundCheckRadius, groundHits, groundLayer);
             bool hasGround = false;
             float bestJumpMultiplier = 1f;
+            Vector2 bestGroundVelocity = Vector2.zero;
+            float bestGroundVelocitySqrMagnitude = 0f;
 
             for (int i = 0; i < hitCount; i++)
             {
@@ -222,9 +229,22 @@ namespace GameLab.Player
                 {
                     bestJumpMultiplier = Mathf.Max(bestJumpMultiplier, corpse.JumpMultiplier);
                 }
+
+                MovingPlatform2D movingPlatform = hit.GetComponentInParent<MovingPlatform2D>();
+                if (movingPlatform != null)
+                {
+                    Vector2 platformVelocity = movingPlatform.CurrentVelocity;
+                    float platformVelocitySqrMagnitude = platformVelocity.sqrMagnitude;
+                    if (platformVelocitySqrMagnitude > bestGroundVelocitySqrMagnitude)
+                    {
+                        bestGroundVelocity = platformVelocity;
+                        bestGroundVelocitySqrMagnitude = platformVelocitySqrMagnitude;
+                    }
+                }
             }
 
             currentGroundJumpMultiplier = hasGround ? bestJumpMultiplier : 1f;
+            currentGroundVelocity = hasGround ? bestGroundVelocity : Vector2.zero;
             return hasGround;
         }
 
@@ -434,6 +454,7 @@ namespace GameLab.Player
             coyoteCounter = 0f;
             isGrounded = false;
             currentGroundJumpMultiplier = 1f;
+            currentGroundVelocity = Vector2.zero;
         }
 
         private Vector2 GetGroundCheckPosition()

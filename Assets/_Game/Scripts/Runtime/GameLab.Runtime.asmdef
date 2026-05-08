@@ -2,7 +2,8 @@
     "name": "GameLab.Runtime",
     "rootNamespace": "GameLab",
     "references": [
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
