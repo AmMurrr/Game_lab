@@ -19,6 +19,11 @@ namespace GameLab.Player
         [SerializeField] private CorpseManager corpseManager;
         [SerializeField] private bool spawnCorpseOnDeath = true;
 
+        [Header("Audio")]
+        [SerializeField] private AudioSource deathAudioSource;
+        [SerializeField] private AudioClip deathClip;
+        [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
+
         private PlayerController2D controller;
         private Rigidbody2D body;
         private Collider2D[] colliders;
@@ -41,6 +46,9 @@ namespace GameLab.Player
             initialRotation = transform.rotation;
 
             ResolveSceneReferences();
+            ResolveDeathAudioSource();
+            ConfigureDeathAudioSource();
+            PreloadDeathClip();
         }
 
         private void OnEnable()
@@ -90,6 +98,7 @@ namespace GameLab.Player
         private IEnumerator DeathRoutine()
         {
             isDead = true;
+            PlayDeathSound();
 
             Vector3 deathPosition = transform.position;
             Quaternion deathRotation = transform.rotation;
@@ -198,6 +207,56 @@ namespace GameLab.Player
             ResolveCorpseManager();
         }
 
+        private void PlayDeathSound()
+        {
+            if (deathClip == null)
+            {
+                return;
+            }
+
+            ResolveDeathAudioSource();
+            ConfigureDeathAudioSource();
+            PreloadDeathClip();
+
+            if (deathAudioSource != null)
+            {
+                deathAudioSource.PlayOneShot(deathClip, deathVolume);
+            }
+        }
+
+        private void ResolveDeathAudioSource()
+        {
+            if (deathAudioSource == null)
+            {
+                deathAudioSource = GetComponent<AudioSource>();
+            }
+
+            if (deathAudioSource == null && deathClip != null)
+            {
+                deathAudioSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+
+        private void ConfigureDeathAudioSource()
+        {
+            if (deathAudioSource == null)
+            {
+                return;
+            }
+
+            deathAudioSource.playOnAwake = false;
+            deathAudioSource.loop = false;
+            deathAudioSource.spatialBlend = 0f;
+        }
+
+        private void PreloadDeathClip()
+        {
+            if (deathClip != null && deathClip.loadState == AudioDataLoadState.Unloaded)
+            {
+                deathClip.LoadAudioData();
+            }
+        }
+
         private void ResolveRespawnPoint()
         {
             if (respawnPoint == null)
@@ -251,6 +310,11 @@ namespace GameLab.Player
 #else
             body.velocity = velocity;
 #endif
+        }
+
+        private void OnValidate()
+        {
+            ConfigureDeathAudioSource();
         }
     }
 }

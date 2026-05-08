@@ -250,6 +250,9 @@ MonoBehaviour:
   resetRotationOnRespawn: 1
   corpseManager: {fileID: 0}
   spawnCorpseOnDeath: 1
+  deathAudioSource: {fileID: 0}
+  deathClip: {fileID: 8300000, guid: 0161f6223066a5a4f8b39fa0cb65bfe4, type: 3}
+  deathVolume: 1
 --- !u!1 &7082349464148581697
 GameObject:
   m_ObjectHideFlags: 0
