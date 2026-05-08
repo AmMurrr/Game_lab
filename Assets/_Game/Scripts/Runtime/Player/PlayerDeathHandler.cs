@@ -55,9 +55,19 @@ namespace GameLab.Player
 
         public void Die(Component source)
         {
+            TryDie(source);
+        }
+
+        public bool TryDie()
+        {
+            return TryDie(null);
+        }
+
+        public bool TryDie(Component source)
+        {
             if (!CanDie())
             {
-                return;
+                return false;
             }
 
             if (deathRoutine != null)
@@ -66,6 +76,7 @@ namespace GameLab.Player
             }
 
             deathRoutine = StartCoroutine(DeathRoutine());
+            return true;
         }
 
         private bool CanDie()

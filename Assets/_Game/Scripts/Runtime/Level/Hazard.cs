@@ -10,12 +10,15 @@ namespace GameLab.Level
         [SerializeField] private bool killOnTriggerStay = true;
         [SerializeField] private bool killOnCollisionEnter = true;
         [SerializeField] private bool killOnCollisionStay;
+        [SerializeField] private bool deactivateAfterKillingPlayer;
+
+        private bool isSpent;
 
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (killOnTriggerEnter)
             {
-                Kill(other);
+                TryKill(other);
             }
         }
 
@@ -23,7 +26,7 @@ namespace GameLab.Level
         {
             if (killOnTriggerStay)
             {
-                Kill(other);
+                TryKill(other);
             }
         }
 
@@ -31,7 +34,7 @@ namespace GameLab.Level
         {
             if (killOnCollisionEnter)
             {
-                Kill(collision.collider);
+                TryKill(collision.collider);
             }
         }
 
@@ -39,17 +42,30 @@ namespace GameLab.Level
         {
             if (killOnCollisionStay)
             {
-                Kill(collision.collider);
+                TryKill(collision.collider);
             }
         }
 
-        private void Kill(Component other)
+        public bool TryKill(Component other)
         {
-            PlayerDeathHandler deathHandler = other.GetComponentInParent<PlayerDeathHandler>();
-            if (deathHandler != null)
+            if (isSpent)
             {
-                deathHandler.Die(this);
+                return false;
             }
+
+            PlayerDeathHandler deathHandler = other.GetComponentInParent<PlayerDeathHandler>();
+            if (deathHandler == null || !deathHandler.TryDie(this))
+            {
+                return false;
+            }
+
+            if (deactivateAfterKillingPlayer)
+            {
+                isSpent = true;
+                gameObject.SetActive(false);
+            }
+
+            return true;
         }
     }
 }

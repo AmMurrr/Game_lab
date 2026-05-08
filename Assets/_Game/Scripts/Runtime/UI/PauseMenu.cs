@@ -1,3 +1,4 @@
+using System.Collections;
 using GameLab.Core;
 using GameLab.Utilities;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace GameLab.UI
 
         private CanvasGroup canvasGroup;
         private bool isPaused;
+        private Coroutine exitRoutine;
 
         public bool IsPaused => isPaused;
 
@@ -96,14 +98,27 @@ namespace GameLab.UI
 
         public void ExitGame()
         {
+            if (exitRoutine != null)
+            {
+                return;
+            }
+
             isPaused = false;
+            Time.timeScale = 1f;
             SetVisible(false);
+
+            exitRoutine = StartCoroutine(ExitGameAfterUiEvent());
+        }
+
+        private IEnumerator ExitGameAfterUiEvent()
+        {
+            yield return null;
 
             GameSession session = ResolveGameSession();
             if (session != null)
             {
                 session.ExitGame();
-                return;
+                yield break;
             }
 
             SceneLoader.QuitApplication();
